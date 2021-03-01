@@ -11,7 +11,7 @@ from datetime import datetime
 from dateutil import parser as dateparser
 from bs4 import BeautifulSoup
 
-print_debugging = True
+print_debugging = False
 
 def fatal(msg):
 	sys.stderr.write(msg+'\n')
@@ -35,9 +35,6 @@ def author_from_id(site, id):
 		resp=requests.get(site+'/wp-json/wp/v2/users/'+str(id))
 		known_authors[id] = json.loads(resp.text)['name']
 	return known_authors[id]
-
-def msgid_from_group_id(group, id):
-	return "<%s@%s>" % (id, group)
 
 
 def maybe_wrap(para):
@@ -80,30 +77,111 @@ def format_content(raw_content):
 	)
 
 
-def format_article_json(article):
-	""" convert a (munged) WordPress API article dictionary
-		to a NetNews article suitable for posting
-	"""
-#	pol=email.policy.SMTP
+class Article(object):
+	def __init__(self):
+		self.groups = []
+		self.author_name = None
+		self.date_utc = None
+		self.wpid = None
+		self.content = None
 
-	msg = email.message.EmailMessage()
+		self.title = None
+		self.wptype = None
+		self.subject = None
+		self.references = []
 
-	msg['Date'] = rfc_date(article['date'])
-	msg['From'] = '"'+article['author_name']+'"<poster@email.invalid>'
-	msg['Message-ID'] = msgid_from_group_id(
-		article['newsgroups'], article['id'])
-	msg['Newsgroups'] = article['newsgroups']
-	msg['Path'] = 'not-for-mail'
-	msg['Subject'] = article['title']
-	#if article.get('status') == 'approved': XXX only works for comments!
-	msg['Approved'] = 'moderator@email.invalid'
-	if 'references' in article:
-		msg['References'] = article['references']
+		#self.path = None
+		#self.approved = None
 
-	content = format_content(article['content']['rendered'])
-	msg.set_content(content, cte='quoted-printable')
 
-	return msg.as_string()#.replace('\r\n', '\n')
+	def msgid(self, typ=None, wpid=None):
+		if not typ: typ = self.wptype
+		if not wpid: wpid = self.wpid
+		return "<%s-%s@%s>" % (typ, wpid, self.groups[0])
+
+	@classmethod
+	def fromNetNews(cls, text):
+		pass
+
+
+	@classmethod
+	def fromWordPressGeneric(cls, history, art):
+		self = cls()
+		self.groups.append(history['group'])
+		self.date_utc = art['date_gmt']
+		self.author_name = art.get('author_name')
+		self.wpid = art['id']
+		self.content = art['content']['rendered']
+
+		if self.date_utc > history['updated']:
+			history['updated'] = self.date_utc
+
+		return self
+
+	@classmethod
+	def fromWordPressPost(cls, history, post):
+		debug('adding post id %s' % post['id'])
+
+		self = cls.fromWordPressGeneric(history, post)
+
+		self.wptype='post'
+		self.title = post['title']['rendered']
+		self.author_name = author_from_id(site, post['author'])
+
+		history['posts'][post['id']] = self.title
+		return self
+
+
+	@classmethod
+	def fromWordPressComment(cls, history, comment):
+		pid = str(comment['post'])
+		if pid not in history['posts']:
+			debug("skip comment for %s type(%s), not in %s" %
+				 (pid, type(pid), history['posts']))
+			return None
+
+		self = cls.fromWordPressGeneric(history, comment)
+
+		self.wptype = 'comment'
+		self.title = history['posts'][pid]
+		self.references = [pid]
+
+		return self
+
+
+	def asWordPress(self):
+		pass
+
+
+	def asNetNews(self):
+		""" convert a (munged) WordPress API article dictionary
+			to a NetNews article suitable for posting
+		"""
+
+		msg = email.message.EmailMessage()
+
+		msg['Date'] = rfc_date(self.date_utc)
+		msg['From'] = '"%s" <poster@email.invalid>' % self.author_name
+		msg['Message-ID'] = self.msgid()
+		msg['Newsgroups'] = ','.join(self.groups)
+		msg['Path'] = 'not-for-mail'
+		msg['Subject'] = self.title
+		#if article.get('status') == 'approved': XXX only works for comments!
+		msg['Approved'] = 'moderator@email.invalid'
+		if self.references:
+			msg['References'] = self.msgid('post', self.references[0])
+
+		content = format_content(self.content)
+		msg.set_content(content, cte='quoted-printable')
+
+		return msg.as_string()
+
+
+	def filename(self):
+		if self.wptype == 'post':
+			return '00post-%s' % self.wpid
+		else:
+			return 'comment-%s-%s' % (self.references[0], self.wpid)
 
 
 class GatewayedGroup(object):
@@ -113,82 +191,54 @@ class GatewayedGroup(object):
 		self.histfile = os.path.join(self.groupdir, 'history.json')
 		self.rundir = os.path.join(self.groupdir, 'incoming')
 
-
 	def history_load(self):
 		return json.load(open(self.histfile))
 
-
 	def history_save(self, history):
 		json.dump(history, open(self.histfile, 'w'), indent=1)
+
+	def unpage(self, url, **params):
+		""" Page through WP API responses until we have all the data
+		"""
+		params['page'] = 1
+		if 'per_page' not in params: params['per_page'] = 100
+		adicts = []
+
+		while True:
+			resp = requests.get(url, params)
+			new_dicts = json.loads(resp.text)
+			if type(new_dicts) is dict:
+				# error response
+				fatal(resp.text)
+			adicts += new_dicts
+			if len(new_dicts) < params['per_page']: return adicts
+			params['page'] += 1
 
 
 	def articles_fetch(self):
 		history = self.history_load()
 		site = history['source']
 		after = iso_datetime(history['updated'])
-		params = {'after': after, 'per_page': 100}
 
-		articles = []
-		done = False
-		for category in ['posts', 'comments']:
-			params['page'] = 1
-			done=False
-			while not done:
-				req = site+'/wp-json/wp/v2/'+category
-				#debug(req, params)
-				resp = requests.get(req, params)
-				new_articles = json.loads(resp.text)
-				if type(new_articles) is dict:
-					# error response
-					fatal(resp.text)
-				#open('debug.response', 'w').write(resp.text)
-				articles += new_articles
-				if len(new_articles) < 100: done=True
-				params['page'] += 1
+		new_posts = [Article.fromWordPressPost(history, p)
+			for p in self.unpage(site+'/wp-json/wp/v2/posts', after=after)]
 
-		print('%d new articles' % len(articles))
-		return articles
+		new_comments = [Article.fromWordPressComment(history, c)
+			for c in self.unpage(site+'/wp-json/wp/v2/comments', after=after)]
 
-
-	def articles_munge(self, articles):
-		history = self.history_load()
-		site = history['source']
-
-		for a in articles:
-			if a['date_gmt'] > history['updated']:
-				history['updated'] = a['date_gmt']
-
-			a['newsgroups'] = self.group
-			if 'title' in a:
-				# top-level post
-				label='00post'
-				debug('adding post id %s' % a['id'])
-				history['posts'][a['id']] = a['title']['rendered']
-				a['author_name'] = author_from_id(site, a['author'])
-				a['title'] = a['title']['rendered']
-			else:
-				# comment
-				pid = str(a['post'])
-				if pid not in history['posts']:
-					debug("skip comment for %s type(%s), not in %s" %
-						 (pid, type(pid), history['posts']))
-					continue
-				label = 'comment-%s' % pid
-				a['title'] = history['posts'][pid]
-				a['references'] = msgid_from_group_id(self.group, pid)
-			a['id'] = '%s-%s' % (label, a['id'])
+		print('%d new posts, %d new comments' %
+			(len(new_posts), len(new_comments)))
 
 		self.history_save(history)
-		return articles
+		return new_posts + new_comments
 
 
 	def articles_store(self, articles):
 		for a in articles:
-			path = os.path.join(self.rundir, a['id'])
-			text = format_article_json(a)
+			path = os.path.join(self.rundir, a.filename())
 			debug(path)
 			postfile=open(path, 'w', encoding='utf8', newline=None)
-			postfile.write(text)
+			postfile.write(a.asNetNews())
 			postfile.close()
 
 
@@ -214,6 +264,6 @@ class GatewayedGroup(object):
 if __name__ == '__main__':
 	for group in sys.argv[1:]:
 		g = GatewayedGroup('groups', group)
-		articles = g.articles_munge(g.articles_fetch())
+		articles = g.articles_fetch()
 		g.articles_store(articles)
 		g.articles_post()
