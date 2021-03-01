@@ -149,7 +149,7 @@ class Article(object):
 			date_gmt: datetime.strftime(date_utc, "%Y-%m-%dT%H:%M:%SZ"),
 			author_name: self.author_name,
 			author_email: self.author_email,
-			content = self.content
+			content : self.content
 		}
 		return post
 
