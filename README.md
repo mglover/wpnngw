@@ -1,5 +1,5 @@
 # wpnngw
-##A WordPress-NetNews gateway
+## A WordPress-NetNews gateway
 
 ### overview
 
