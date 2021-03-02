@@ -45,3 +45,12 @@ def unwrap(text):
 	"""
 	return re.sub('[^\n]\n[^\n]', '', text)
 
+def groupsdir():
+	"""return the path to the directory containing gatewayed group dirs
+	"""
+	dir = os.environ.get('WPNNGW_HOME')
+	if not dir: 
+		home = os.environ.get('HOME')
+		if not home: raise ValueError('no WPNNGW_HOME, nor HOME')
+		dir = os.path.join(home, 'wpnngw_groups')
+	return dir

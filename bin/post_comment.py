@@ -6,6 +6,7 @@ post a comment on a wordpress post
 
 import sys, os, json, requests
 from wpnngw.article import Article
+from wpnngw.util import groupsdir
 
 def post_comment(site, post_data):
 	url = site + '/wp-json/wp/v2/comments'
@@ -26,7 +27,7 @@ if __name__ == '__main__':
 	group = art.group[0]
 	post_data = Article.asWordPress()
 
-	hist = json.load(open(os.path.join('groups',  group, 'history.json')))
+	hist = json.load(open(os.path.join(groupsdir(),  group, 'history.json')))
 	site = hist['source']
 
 	post_comment(site, post_data)
