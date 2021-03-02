@@ -2,7 +2,7 @@
 util.py
 """
 
-import json, re, requests, textwrap
+import os, json, re, requests, textwrap
 from datetime import datetime
 from dateutil import parser as dateparser
 
