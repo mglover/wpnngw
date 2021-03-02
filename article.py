@@ -5,7 +5,7 @@ article.py
 import email.message, email.policy
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
-
+from util import *
 
 class Article(object):
 	def __init__(self):
@@ -35,7 +35,7 @@ class Article(object):
 		self.wptype, self.wpid = postid.split('-')
 
 
-	def text_from_html(raw_content):
+	def text_from_html(self, raw_content):
 		""" convert the raw HTML to something more newsreader-friendly
 		"""
 		soup = BeautifulSoup(raw_content,features='lxml')
