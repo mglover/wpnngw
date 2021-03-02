@@ -6,7 +6,7 @@
 """
 
 import sys
-from gwgroup import GatewayedGroup
+from wpnngw.gwgroup import GatewayedGroup
 
 if __name__ == '__main__':
 	for group in sys.argv[1:]:

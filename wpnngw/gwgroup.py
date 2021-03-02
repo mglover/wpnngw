@@ -3,8 +3,8 @@ gwgroup.py
 """
 
 import json, os, subprocess, requests
-from article import Article
-from util import *
+from wpnngw.article import Article
+from wpnngw.util import *
 
 
 class GatewayedGroup(object):

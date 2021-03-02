@@ -5,7 +5,7 @@ article.py
 import email.message, email.policy
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
-from util import *
+from wpnngw.util import *
 
 class Article(object):
 	def __init__(self):
