@@ -4,9 +4,9 @@
 	and post those articles through the blog's approval system
 """
 
-import sys
+import sys, inn_config
 
-mailer = "/usr/lib/news/bin/innmail"
+mailer = inn_config.as_dict()['mail"/usr/lib/news/bin/innmail"
 
 def fatal(*args):
 	print(*args)
