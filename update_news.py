@@ -207,9 +207,9 @@ class Article(object):
 		msg = email.message.EmailMessage()
 
 		msg['Date'] = rfc_date(self.date_utc)
-		if self.author_email: email = self.author_email 
-		else: email = "poster@email.invalid"
-		msg['From'] = '"%s" <%s>' % (self.author_name, email)
+		if self.author_email: frm_email = self.author_email 
+		else: frm_email = "poster@email.invalid"
+		msg['From'] = '"%s" <%s>' % (self.author_name, frm_email)
 		msg['Message-ID'] = self.msgid()
 		msg['Newsgroups'] = ','.join(self.groups)
 		msg['Path'] = 'not-for-mail'
@@ -277,17 +277,15 @@ class GatewayedGroup(object):
 		print('%d new posts, %d new comments' %
 			(len(new_posts), len(new_comments)))
 
-		self.history_save(history)
-		return new_posts + new_comments
 
-
-	def articles_store(self, articles):
-		for a in articles:
+		for a in new_posts + new_comments:
 			path = os.path.join(self.rundir, a.filename())
 			debug(path)
 			postfile=open(path, 'w', encoding='utf8', newline=None)
 			postfile.write(a.asNetNews())
 			postfile.close()
+
+		self.history_save(history)
 
 
 	def articles_post(self):
@@ -312,6 +310,5 @@ class GatewayedGroup(object):
 if __name__ == '__main__':
 	for group in sys.argv[1:]:
 		g = GatewayedGroup('groups', group)
-		articles = g.articles_fetch()
-		g.articles_store(articles)
+		g.articles_fetch()
 		g.articles_post()
