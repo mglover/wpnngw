@@ -4,7 +4,7 @@ gwgroup.py
 
 import json, os, subprocess, requests
 from wpnngw.article import Article
-from wpnngw.util import *
+from wpnngw.util import fatal, debug, iso_datetime
 
 
 class GatewayedGroup(object):
