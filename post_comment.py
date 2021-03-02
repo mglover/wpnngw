@@ -5,7 +5,7 @@ post a comment on a wordpress post
 """
 
 import sys, os, json, requests
-from update_news import Article
+from article import Article
 
 def post_comment(site, post_data):
 	url = site + '/wp-json/wp/v2/comments'
