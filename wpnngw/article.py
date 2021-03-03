@@ -2,7 +2,7 @@
 article.py
 """
 
-import email.message, email.policy, textwrap
+import email.message, email.policy, textwrap, requests, json
 from bs4 import BeautifulSoup
 from wpnngw.util import debug, utc_datetime, iso_datestr, rfc_datestr
 
@@ -142,6 +142,8 @@ class Article(object):
 		debug('adding post id %s' % post['id'])
 
 		self = cls.fromWordPressGeneric(history, post)
+
+		site = history['source']
 
 		self.wptype='post'
 		self.title = post['title']['rendered']
