@@ -53,10 +53,6 @@ use for authentication.
 
 ### TODO
 
-dates are not handled in a consistent way -- a mix of local time and 
-UTC, with and without timezone specifiers.  We should explicitly use UTC 
-everywhere internally.
-
 addgroup sets new groups up to fetch all posts starting with the UNIX 
 epoch.  This is unlikely what most users want: there should be a 
 commandline option to set this.
