@@ -42,7 +42,7 @@ class GatewayedGroup(object):
 	def articles_fetch(self):
 		history = self.history_load()
 		site = history['source']
-		after = iso_datetime(history['updated'])
+		after = utc_datetime(history['updated'])
 
 		new_posts = [Article.fromWordPressPost(history, p)
 			for p in self.unpage(site+'/wp-json/wp/v2/posts', after=after)]
@@ -65,12 +65,11 @@ class GatewayedGroup(object):
 
 
 	def articles_post(self):
-		incoming = os.path.join(self.groupdir, 'incoming')
 		active = os.path.join(self.groupdir, 'active')
 		processed = os.path.join(self.groupdir, 'processed')
 
-		for article in os.listdir(incoming):
-			i = os.path.join(incoming, article)
+		for article in os.listdir(self.rundir):
+			i = os.path.join(self.rundir, article)
 			a = os.path.join(active, article)
 			p = os.path.join(processed, article)
 			os.rename(i, a)

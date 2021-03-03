@@ -15,14 +15,26 @@ def fatal(msg):
 def debug(*args):
 	if print_debugging: print(*args)
 
-def rfc_date(datestr):
+def utc_datetime(datestr):
+	""" take a random-format datetime string and return
+	    a UTC datetime object
+		(troublingly, assume UTC in the absence of timezone data)
+	"""
 	date = dateparser.parse(datestr)
-	return datetime.strftime(date, "%d %b %Y %H:%M:%S %z")
+	if not date.utcoffset(): return date
+	return date + date.utcoffset()
 
-def iso_datetime(datestr):
-	""" Wordpress API requires a two-digit timezone specifier ???"""
-	date = dateparser.parse(datestr)
-	return datetime.strftime(date, '%Y-%m-%dT%H:%M:%S-00')
+def rfc_datestr(utc_date):
+	""" take a UTC datetime object and return and RFC-formatted string
+	"""
+	return datetime.strftime(utc_date, "%d %b %Y %H:%M:%S -0000")
+
+def iso_datestr(utc_date):
+	""" take a UTC datetime object and return an ISO-formatted string
+		(with the two-digit timezone specifier required() by WP API)
+	"""
+	return datetime.strftime(utc_date, '%Y-%m-%dT%H:%M:%S-00')
+	#datetime.strftime(date_utc, "%Y-%m-%dT%H:%M:%SZ"),
 
 known_authors = {}
 def author_from_id(site, id):

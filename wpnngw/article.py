@@ -3,8 +3,8 @@ article.py
 """
 
 import email.message, email.policy
-from datetime import datetime, timezone
 from bs4 import BeautifulSoup
+from datetime import datetime, timezone
 from wpnngw.util import *
 
 class Article(object):
@@ -33,7 +33,6 @@ class Article(object):
 	def parse_msgid(self, msgid):
 		postid, group0 = re.search("^<([^@]*)@([^>]*)>$", msgid).groups()
 		self.wptype, self.wpid = postid.split('-')
-
 
 	def text_from_html(self, raw_content):
 		""" convert the raw HTML to something more newsreader-friendly
@@ -74,8 +73,7 @@ class Article(object):
 		self.wpid = self.parse_msgid()
 
 		if 'Date' in msg:
-			date = dateutil.parser.parse(msg['Date'])
-			self.date_utc = date + date.utcoffset()
+			self.date_utc = utc_datetime(msg['Date'])
 		else:
 			self.date_utc = datetime.now(timezone.utc)
 
@@ -94,7 +92,7 @@ class Article(object):
 
 	def asWordPress(self):
 		post = {
-			date_gmt: datetime.strftime(date_utc, "%Y-%m-%dT%H:%M:%SZ"),
+			date_gmt: iso_datestr(date_utc),
 			author_name: self.author_name,
 			author_email: self.author_email,
 			content : self.content
@@ -106,13 +104,14 @@ class Article(object):
 	def fromWordPressGeneric(cls, history, art):
 		self = cls()
 		self.groups.append(history['group'])
-		self.date_utc = art['date_gmt']
+		self.date_utc = utc_datetime(art['date_gmt'])
 		self.author_name = art.get('author_name')
 		self.wpid = art['id']
 		self.content = art['content']['rendered']
 
-		if self.date_utc > history['updated']:
-			history['updated'] = self.date_utc
+		updated = utc_datetime(history['updated'])
+		if self.date_utc > updated:
+			history['updated'] = iso_datestr(self.date_utc)
 
 		return self
 
@@ -154,7 +153,7 @@ class Article(object):
 
 		msg = email.message.EmailMessage()
 
-		msg['Date'] = rfc_date(self.date_utc)
+		msg['Date'] = rfc_datestr(self.date_utc)
 		if self.author_email: frm_email = self.author_email 
 		else: frm_email = "poster@email.invalid"
 		msg['From'] = '"%s" <%s>' % (self.author_name, frm_email)
