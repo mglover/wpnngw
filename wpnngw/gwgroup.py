@@ -4,12 +4,13 @@ gwgroup.py
 
 import json, os, subprocess, requests
 from wpnngw.article import Article
-from wpnngw.util import fatal, debug, iso_datetime
+from wpnngw.util import fatal, debug, utc_datetime, groupsdir
 
 
 class GatewayedGroup(object):
-	def __init__(self, dir, group):
+	def __init__(self, group):
 		self.group = group
+		dir = groupsdir()
 		self.groupdir = os.path.join(dir, group)
 		self.histfile = os.path.join(self.groupdir, 'history.json')
 		self.rundir = os.path.join(self.groupdir, 'incoming')

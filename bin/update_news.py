@@ -7,10 +7,9 @@
 
 import sys
 from wpnngw.gwgroup import GatewayedGroup
-from wpnngw.util import groupsdir
 
 if __name__ == '__main__':
 	for group in sys.argv[1:]:
-		g = GatewayedGroup(groupsdir(), group)
+		g = GatewayedGroup(group)
 		g.articles_fetch()
 		g.articles_post()
