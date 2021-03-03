@@ -36,27 +36,6 @@ def iso_datestr(utc_date):
 	return datetime.strftime(utc_date, '%Y-%m-%dT%H:%M:%S-00')
 	#datetime.strftime(date_utc, "%Y-%m-%dT%H:%M:%SZ"),
 
-known_authors = {}
-def author_from_id(site, id):
-	if id not in known_authors:
-		resp=requests.get(site+'/wp-json/wp/v2/users/'+str(id))
-		known_authors[id] = json.loads(resp.text)['name']
-	return known_authors[id]
-
-def maybe_wrap(para):
-	"""wrap paragraphs that are not primarily URLs
-	"""
-	s=e=para.find('http')
-	if e != -1:
-		while e<len(para) and not para[e].isspace(): e+=1
-		if e-s > len(para)/2: return para
-	return '\n'.join(textwrap.wrap(para))
-
-def unwrap(text):
-	"""remove all 'wrapping' newlines, but preserve '\n\n' sequences
-	"""
-	return re.sub('[^\n]\n[^\n]', '', text)
-
 def groupsdir():
 	"""return the path to the directory containing gatewayed group dirs
 	"""
