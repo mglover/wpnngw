@@ -3,7 +3,7 @@ util.py
 """
 
 import os, json, re, requests, textwrap
-from datetime import datetime
+from datetime import datetime, timezone
 from dateutil import parser as dateparser
 
 print_debugging = False
@@ -21,8 +21,12 @@ def utc_datetime(datestr):
 		(troublingly, assume UTC in the absence of timezone data)
 	"""
 	date = dateparser.parse(datestr)
-	if not date.utcoffset(): return date
+	if not date.utcoffset():
+		date = date.replace(tzinfo=timezone.utc)
 	return date + date.utcoffset()
+
+def utc_now():
+	return datetime.now(timezone.utc)
 
 def rfc_datestr(utc_date):
 	""" take a UTC datetime object and return and RFC-formatted string

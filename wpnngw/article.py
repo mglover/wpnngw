@@ -2,9 +2,8 @@
 article.py
 """
 
-import email.message, email.policy
+import email.message, email.policy, textwrap
 from bs4 import BeautifulSoup
-from datetime import datetime, timezone
 from wpnngw.util import debug, utc_datetime, iso_datestr, rfc_datestr
 
 
@@ -98,7 +97,7 @@ class Article(object):
 		if 'Date' in msg:
 			self.date_utc = utc_datetime(msg['Date'])
 		else:
-			self.date_utc = datetime.now(timezone.utc)
+			self.date_utc = utc_now()
 
 		if 'From' not in msg or not len(msg['From'].addresses):
 			raise ValueError("Missing required 'From:' address")
