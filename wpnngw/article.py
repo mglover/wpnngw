@@ -64,7 +64,7 @@ class Article(object):
 		if social_footer:
 			social_footer.replaceWith('')
 		for a in soup('a'):
-			if a.text != a.attrs['href']:
+			if 'href' in a and a.text != a.attrs['href']:
 				a.replaceWith("%s (%s)" % (a.text, a.attrs['href']))
 		for b in soup('b'):
 			b.replaceWith('*%s*'%b.text)
