@@ -39,7 +39,7 @@ class GatewayedGroup(object):
 			params['page'] += 1
 
 
-	def articles_fetch(self):
+	def wordpress_fetch(self):
 		history = self.history_load()
 		site = history['source']
 		after = utc_datetime(history['updated'])
@@ -64,7 +64,7 @@ class GatewayedGroup(object):
 		self.history_save(history)
 
 
-	def articles_post(self):
+	def netnews_post(self):
 		active = os.path.join(self.groupdir, 'active')
 		processed = os.path.join(self.groupdir, 'processed')
 
@@ -80,4 +80,17 @@ class GatewayedGroup(object):
 		errors = os.listdir(active)
 		if errors:
 			fatal("%d articles in %s have errors" % (len(errors), active))
+
+
+	def wordpress_post(self, post_data):
+		history = self.history_load()
+		site = history['source']
+
+		url = site + '/wp-json/wp/v2/comments'
+		json_data = json.dumps(post_data)
+		print ('posting to %s with data %s' % (url, json_data))
+		resp = requests.post(url, json=json_data)
+		open('debug.post', 'w').write(resp.text)
+		print('response status %s: headers: %s' % 
+			(resp.status_code, resp.headers))
 

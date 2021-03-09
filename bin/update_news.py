@@ -11,5 +11,5 @@ from wpnngw.gwgroup import GatewayedGroup
 if __name__ == '__main__':
 	for group in sys.argv[1:]:
 		g = GatewayedGroup(group)
-		g.articles_fetch()
-		g.articles_post()
+		g.wordpress_fetch()
+		g.netnews_post()
