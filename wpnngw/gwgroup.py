@@ -91,6 +91,6 @@ class GatewayedGroup(object):
 		print ('posting to %s with data %s' % (url, json_data))
 		resp = requests.post(url, json=json_data)
 		open('debug.post', 'w').write(resp.text)
-		print('response status %s: headers: %s' % 
+		print('response status %s: headers: %s' %
 			(resp.status_code, resp.headers))
 
