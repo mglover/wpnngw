@@ -39,8 +39,11 @@ class MessageID(object):
 	def fromString(cls, idstr):
 		if not idstr: return None
 		self = cls()
-		postid, self.domain = re.search("^<([^@]*)@([^>]*)>$", idstr).groups()
-		self.category, self.uid = postid.split('-')
+		try:
+			postid, self.domain = re.search("^<([^@]*)@([^>]*)>$", idstr).groups()
+			self.category, self.uid = postid.split('-')
+		except:
+			return None
 		return self
 
 	@classmethod
@@ -77,7 +80,7 @@ class Article(object):
 	def root_id(self):
 		""" return the MessageID for the post this comment is rooted by
 		"""
-		all_roots = list(filter(lambda o: o.category=='post', self.references))
+		all_roots = list(filter(lambda o: o and o.category=='post', self.references))
 		if len(all_roots) > 1:
 			raise ValueError("comment has %d root nodes ?!?" % len(all_roots))
 		elif len(all_roots) == 0:
