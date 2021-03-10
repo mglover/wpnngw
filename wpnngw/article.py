@@ -139,7 +139,8 @@ class Article(object):
 			'date_gmt': iso_datestr(self.date_utc),
 			'author_name': self.author_name,
 			'author_email': self.author_email,
-			'content' : self.content
+			'content' : self.content,
+			'post': int(self.references.uid)
 		}
 		return post
 
