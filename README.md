@@ -9,7 +9,7 @@ Uses the Wordpress REST API to fetch new posts and comments, and to
 create new comments to existing posts.
 
 You must be running the INN news server on the local machine: articles 
-are injected using the 'inews' executable.
+are injected using the 'inews' executable.  
 
 ### environment
 
@@ -43,6 +43,9 @@ post_comment.py takes the filename of a NetNews-formatted file, parses
 it to determine the site and top-level post it applies to, and posts a 
 comment using the REST API.
 
+gwmail.py is installed an INN's mta program, and intercepts articles 
+mailed to group moderators and posts them to the backing WordPress blog.
+
 Posting requires 'rest_allow_anonymous_comments' to be set in the WP
 site's config, by adding this line to your theme's functions.php:
 
@@ -61,9 +64,11 @@ addgroup sets new groups up to fetch all posts starting with the UNIX
 epoch.  This is unlikely what most users want: there should be a 
 commandline option to set this.
 
-there is no way to intercept posts through NNTP and get them to 
-WordPress.  A python filter is an obvious choice here, but must still be 
-written.
+responses to non-top-level posts currently fail as we have no way of 
+knowing (if the newsreader only included the comment's id, not the 
+post's, in the References: header) what post it should be applied to. 
+Options: including the top-level post's id in the msgid of every comment, 
+querying wordpress to figure out which post the comment belongs to.
 
 
 
