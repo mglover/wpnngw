@@ -44,7 +44,11 @@ it to determine the site and top-level post it applies to, and posts a
 comment using the REST API.
 
 Posting requires 'rest_allow_anonymous_comments' to be set in the WP
-site's config. See:
+site's config, by adding this line to your theme's functions.php:
+
+add_filter( 'rest_allow_anonymous_comments', '__return_true' );
+
+See:
 
 https://developer.wordpress.org/reference/hooks/rest_allow_anonymous_comments/
 
