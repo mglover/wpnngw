@@ -55,6 +55,7 @@ class GatewayedGroup(object):
 
 
 		for a in new_posts + new_comments:
+			if not a: continue
 			path = os.path.join(self.rundir, a.filename())
 			debug(path)
 			postfile=open(path, 'w', encoding='utf8', newline=None)
