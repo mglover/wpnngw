@@ -44,14 +44,18 @@ class GatewayedGroup(object):
 		site = history['source']
 		after = utc_datetime(history['updated'])
 
-		new_posts = [Article.fromWordPressPost(history, p)
-			for p in self.unpage(site+'/wp-json/wp/v2/posts', after=after)]
+		try:
+			new_posts = [Article.fromWordPressPost(history, p)
+				for p in self.unpage(site+'/wp-json/wp/v2/posts', after=after)]
 
-		new_comments = [Article.fromWordPressComment(history, c)
-			for c in self.unpage(site+'/wp-json/wp/v2/comments', after=after)]
-
-		print('%d new posts, %d new comments' %
-			(len(new_posts), len(new_comments)))
+			new_comments = [Article.fromWordPressComment(history, c)
+				for c in self.unpage(site+'/wp-json/wp/v2/comments', after=after)]
+		except requests.exceptions.ConnectionError:
+			print('%s: connection to %s failed' % (self.group,site))
+			return
+		else:
+			print('%s: %d new posts, %d new comments' %
+				(self.group, len(new_posts), len(new_comments)))
 
 
 		for a in new_posts + new_comments:

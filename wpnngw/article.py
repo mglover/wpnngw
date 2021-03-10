@@ -30,10 +30,10 @@ def unwrap(text):
 
 
 class MessageID(object):
-	def __init__(self):
-		self.category = None
-		self.uid = None
-		self.domain = None
+	def __init__(self, category=None, uid=None, domain=None):
+		self.category = category
+		self.uid = uid
+		self.domain = domain
 
 	@classmethod
 	def fromString(cls, idstr):
@@ -46,11 +46,12 @@ class MessageID(object):
 	@classmethod
 	def fromArticle(cls, art):
 		self = cls()
-		self.category = art.wptyp
+		self.category = art.wptype
 		self.uid = art.wpid
 		# XXX wrong for crossposted articles
 		self.domain = art.groups[0]
 		return self
+
 
 	def asString(self):
 		return "<%s-%s@%s>" % (self.category, self.uid, self.domain)
@@ -58,24 +59,35 @@ class MessageID(object):
 
 class Article(object):
 	def __init__(self):
-		self.groups = []
-		self.author_name = None
-		self.author_email = None
-		self.date_utc = None
-		self.wpid = None
-		self.content = None
+		self.groups = []			# list of strings
+		self.author_name = None		# string
+		self.author_email = None	# strin
+		self.date_utc = None		# datetime object
+		self.wpid = None			# int
+		self.content = None			# string
 
-		self.title = None
-		self.wptype = None
-		self.subject = None
-		self.references = []
+		self.title = None			# string
+		self.wptype = None			# 'post' or 'comment'
+		self.references = []		# list of MessageID instances
 
 		#self.path = None
 		#self.approved = None
 
 
+	def root_id(self):
+		""" return the MessageID for the post this comment is rooted by
+		"""
+		all_roots = list(filter(lambda o: o.category=='post', self.references))
+		if len(all_roots) > 1:
+			raise ValueError("comment has %d root nodes ?!?" % len(all_roots))
+		elif len(all_roots) == 0:
+			return None
+		return all_roots[0]
+
+
 	def text_from_html(self, raw_content):
 		""" convert the raw HTML to something more newsreader-friendly
+			XXX move social_footer handling to per-group config
 		"""
 		soup = BeautifulSoup(raw_content,features='lxml')
 		social_footer = soup.find(class_='sharedaddy')
@@ -101,7 +113,6 @@ class Article(object):
 	def fromNetNews(cls, text):
 		""" parse a NetNews article, returning
 			a Wordpress-API-ready dictionary
-			XXX does not support cross-posted articles
 		"""
 		parser = email.parser.Parser(policy=email.policy.default)
 		msg = parser.parsestr(text)
@@ -109,10 +120,10 @@ class Article(object):
 
 		msgid = MessageID.fromString(msg['Message-ID'])
 		if msgid:
-			self.wptyp = msgid.category
+			self.wptype = msgid.category
 			self.wpid = msgid.uid
 
-		self.groups = msg['Newsgroups'].split(',')
+		self.groups = [x.strip() for x in msg['Newsgroups'].split(',')]
 		self.title = msg['Subject']
 
 		if 'Date' in msg:
@@ -126,8 +137,8 @@ class Article(object):
 		self.author_name = frm.display_name
 		self.author_email = frm.username+'@'+frm.domain
 
-		# XXX fails on cross-posted articles
-		self.references = MessageID.fromString(msg['References'])
+		self.references = [MessageID.fromString(r)
+			for r in msg['References'].split(',')]
 
 		self.content = unwrap(msg.get_content())
 
@@ -135,14 +146,15 @@ class Article(object):
 
 
 	def asWordPress(self):
-		post = {
+		data = {
 			'date_gmt': iso_datestr(self.date_utc),
 			'author_name': self.author_name,
 			'author_email': self.author_email,
-			'content' : self.content,
-			'post': int(self.references.uid)
+			'content' : self.content
 		}
-		return post
+		parent = self.root_id()
+		if parent: data['post'] = parent.uid
+		return data
 
 
 	@classmethod
@@ -188,7 +200,9 @@ class Article(object):
 
 		self.wptype = 'comment'
 		self.title = history['posts'][pid]
-		self.references = [pid]
+		self.references = [MessageID(
+			category='post', uid=pid, domain=history['group'])]
+
 
 		return self
 
@@ -204,14 +218,14 @@ class Article(object):
 		if self.author_email: frm_email = self.author_email 
 		else: frm_email = "poster@email.invalid"
 		msg['From'] = '"%s" <%s>' % (self.author_name, frm_email)
-		msg['Message-ID'] = MessageID.fromArticle(self)
+		msg['Message-ID'] = MessageID.fromArticle(self).asString()
 		msg['Newsgroups'] = ','.join(self.groups)
 		msg['Path'] = 'not-for-mail'
 		msg['Subject'] = self.title
-		#if article.get('status') == 'approved': XXX only works for comments!
 		msg['Approved'] = 'moderator@email.invalid'
 		if self.references:
-			msg['References'] = [self.references.asString()]
+			msg['References'] = ','.join([r.asString()
+				 for r in self.references])
 
 		content = self.text_from_html(self.content)
 		msg.set_content(content, cte='quoted-printable')
@@ -223,6 +237,7 @@ class Article(object):
 		if self.wptype == 'post':
 			return '00post-%s' % self.wpid
 		else:
-			return 'comment-%s-%s' % (self.references[0].uid, self.wpid)
+			root = self.root_id()
+			return 'comment-%s-%s' % (root.uid, self.wpid)
 
 
