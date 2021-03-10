@@ -2,9 +2,9 @@
 article.py
 """
 
-import email.message, email.policy, textwrap, requests, json
+import email.message, email.policy, textwrap, requests, json, re
 from bs4 import BeautifulSoup
-from wpnngw.util import debug, utc_datetime, iso_datestr, rfc_datestr
+from wpnngw.util import debug, utc_datetime, iso_datestr, rfc_datestr, utc_now
 
 
 known_authors = {}
