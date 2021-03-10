@@ -3,7 +3,7 @@
 addgroup.py
 """
 import sys, os, json
-from wpnngw.util import groupsdir
+from wpnngw.util import groupsdir, fatal
 
 def add_group(group, site):
 	dir = groupsdir()
@@ -15,15 +15,17 @@ def add_group(group, site):
 		if not os.path.isdir(sp): os.mkdir(sp)
 
 	d = {
-		source: site,
-		group: group,
-		posts: {}
-		updated: "1970-01-01T00:00:00"
+		'source': site,
+		'group': group,
+		'posts': {},
+		'updated': "1970-01-01T00:00:00"
 	}
 	history = os.path.join(groupdir, 'history.json')
 	with open(history, 'w') as f:
-		json.dump(d, f)
+		json.dump(d, f, indent=2)
 
 
 if __name__ == '__main__':
-	addgroup(sys.argv[1], sys.argv[2])
+	me = os.path.basename(sys.argv[0])
+	if len(sys.argv) < 3: fatal("usage: %s group site" % me)
+	add_group(sys.argv[1], sys.argv[2])
