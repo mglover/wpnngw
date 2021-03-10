@@ -29,6 +29,33 @@ def unwrap(text):
 	return re.sub('[^\n]\n[^\n]', '', text)
 
 
+class MessageID(object):
+	def __init__(self):
+		self.category = None
+		self.uid = None
+		self.domain = None
+
+	@classmethod
+	def fromString(cls, idstr):
+		if not idstr: return None
+		self = cls()
+		postid, self.domain = re.search("^<([^@]*)@([^>]*)>$", idstr).groups()
+		self.category, self.uid = postid.split('-')
+		return self
+
+	@classmethod
+	def fromArticle(cls, art):
+		self = cls()
+		self.category = art.wptyp
+		self.uid = art.wpid
+		# XXX wrong for crossposted articles
+		self.domain = art.groups[0]
+		return self
+
+	def asString(self):
+		return "<%s-%s@%s>" % (self.category, self.uid, self.domain)
+
+
 class Article(object):
 	def __init__(self):
 		self.groups = []
@@ -46,15 +73,6 @@ class Article(object):
 		#self.path = None
 		#self.approved = None
 
-
-	def msgid(self, typ=None, wpid=None):
-		if not typ: typ = self.wptype
-		if not wpid: wpid = self.wpid
-		return "<%s-%s@%s>" % (typ, wpid, self.groups[0])
-
-	def parse_msgid(self, msgid):
-		postid, group0 = re.search("^<([^@]*)@([^>]*)>$", msgid).groups()
-		self.wptype, self.wpid = postid.split('-')
 
 	def text_from_html(self, raw_content):
 		""" convert the raw HTML to something more newsreader-friendly
@@ -87,12 +105,15 @@ class Article(object):
 		"""
 		parser = email.parser.Parser(policy=email.policy.default)
 		msg = parser.parsestr(text)
-
 		self = cls()
-		self.parse_msgid(msg['Message-ID'])
-		self.groups = msg['Newsgroups']
+
+		msgid = MessageID.fromString(msg['Message-ID'])
+		if msgid:
+			self.wptyp = msgid.category
+			self.wpid = msgid.uid
+
+		self.groups = msg['Newsgroups'].split(',')
 		self.title = msg['Subject']
-		self.wpid = self.parse_msgid()
 
 		if 'Date' in msg:
 			self.date_utc = utc_datetime(msg['Date'])
@@ -105,19 +126,20 @@ class Article(object):
 		self.author_name = frm.display_name
 		self.author_email = frm.username+'@'+frm.domain
 
-		self.references = postid_from_references(msg['References'])
+		# XXX fails on cross-posted articles
+		self.references = MessageID.fromString(msg['References'])
 
 		self.content = unwrap(msg.get_content())
 
-		return post, msg['Newsgroups']
+		return self
 
 
 	def asWordPress(self):
 		post = {
-			date_gmt: iso_datestr(date_utc),
-			author_name: self.author_name,
-			author_email: self.author_email,
-			content : self.content
+			'date_gmt': iso_datestr(self.date_utc),
+			'author_name': self.author_name,
+			'author_email': self.author_email,
+			'content' : self.content
 		}
 		return post
 
@@ -181,14 +203,14 @@ class Article(object):
 		if self.author_email: frm_email = self.author_email 
 		else: frm_email = "poster@email.invalid"
 		msg['From'] = '"%s" <%s>' % (self.author_name, frm_email)
-		msg['Message-ID'] = self.msgid()
+		msg['Message-ID'] = MessageID.fromArticle(self)
 		msg['Newsgroups'] = ','.join(self.groups)
 		msg['Path'] = 'not-for-mail'
 		msg['Subject'] = self.title
 		#if article.get('status') == 'approved': XXX only works for comments!
 		msg['Approved'] = 'moderator@email.invalid'
 		if self.references:
-			msg['References'] = self.msgid('post', self.references[0])
+			msg['References'] = [self.references.asString()]
 
 		content = self.text_from_html(self.content)
 		msg.set_content(content, cte='quoted-printable')
@@ -200,6 +222,6 @@ class Article(object):
 		if self.wptype == 'post':
 			return '00post-%s' % self.wpid
 		else:
-			return 'comment-%s-%s' % (self.references[0], self.wpid)
+			return 'comment-%s-%s' % (self.references[0].uid, self.wpid)
 
 
