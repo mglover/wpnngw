@@ -6,7 +6,10 @@ import sys, os, json, re, requests
 from datetime import datetime, timezone
 from dateutil import parser as dateparser
 
+INNCONF="/usr/news/etc/inn.conf"
+
 print_debugging = False
+
 
 def fatal(msg):
 	sys.stderr.write(msg+'\n')
@@ -49,3 +52,26 @@ def groupsdir():
 		if not home: raise ValueError('no WPNNGW_HOME, nor HOME')
 		dir = os.path.join(home, 'wpnngw_groups')
 	return dir
+
+
+def inn_config(cfg=INNCONF):
+	def unquote(value):
+		"""remove surrounding quotes and remove backslash-quoting
+		"""
+		assert value.startswith('"') and value.endswith('"')
+		value.strip('"')
+		value.replace('\\\\', '\\').replace('\\"', '"')
+		return value
+		d = {}
+
+	lineno=1
+	for line in open(cfg).readlines():
+		if line.startswith('#') or len(line.strip()) == 0: continue
+		name, value = line.split(':', 1)
+		if name in d: continue
+		value = value.strip()
+		if value.startswith('"'):
+			value = unquote(value)
+		d[name] = value
+		lineno+=1
+	return d
