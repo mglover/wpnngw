@@ -6,7 +6,7 @@ import sys, os, json, re, requests
 from datetime import datetime, timezone
 from dateutil import parser as dateparser
 
-INNCONF="/usr/news/etc/inn.conf"
+INNCONF="/usr/local/news/etc/inn.conf"
 
 print_debugging = False
 
@@ -62,8 +62,8 @@ def inn_config(cfg=INNCONF):
 		value.strip('"')
 		value.replace('\\\\', '\\').replace('\\"', '"')
 		return value
-		d = {}
 
+	d = {}
 	lineno=1
 	for line in open(cfg).readlines():
 		if line.startswith('#') or len(line.strip()) == 0: continue
@@ -75,3 +75,51 @@ def inn_config(cfg=INNCONF):
 		d[name] = value
 		lineno+=1
 	return d
+
+
+class QueueDir(object):
+	""" A failure-safe queue of files to process
+		(based on DJB's mechanism in qmail)
+		unprocessed files are written to root/new
+		moved to root/cur while being processed
+		and moved to root/fin on success
+		files with processing failures will be left in root/new
+	"""
+	def __init__(self, root):
+		self.root = root
+		self.new = os.path.join(root, 'new')
+		self.cur = os.path.join(root, 'cur')
+		self.fin = os.path.join(root, 'fin')
+
+	def _mkdirs(self):
+		if not os.path.isdir(self.root):
+			os.mkdir(self.root)
+		for sub in [self.new, self.cur, self.fin]:
+			if not os.path.isdir(sub):
+				os.mkdir(sub)
+
+	def newfile(self, filename):
+		self._mkdirs()
+		path = os.path.join(self.new, filename)
+		if os.path.exists(path): raise ValueError("File exists: %s" % path)
+		return path
+
+	def process(self, proc):
+		self._mkdirs()
+		for f in os.listdir(self.new):
+			n = os.path.join(self.new, f)
+			c = os.path.join(self.cur, f)
+			f = os.path.join(self.fin, f)
+			os.rename(n, c)
+			if proc(c):
+				os.rename(c, f)
+
+	def pending(self):
+		"""return the full paths of all unprocessed files
+		"""
+		return [os.path.join(self.new, f) for f in os.listdir(self.new)]
+
+	def errors(self):
+		"""return the full paths of all files that had processing errors
+		"""
+		return [os.path.join(self.cur, f) for f in os.listdir(self.cur)]
