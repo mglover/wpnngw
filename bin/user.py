@@ -2,9 +2,10 @@
 #user.py
 #manage a flat-file of usernames and passwords
 
-import sys, crypt, getpass, random
+import os, sys, crypt, getpass, random
+from wpnngw.util import inn_config
 
-userfile = "/var/spool/news/users"
+userfile = os.path.join(inn_config()['pathspool'], "users")
 
 def fatal(msg):
 	sys.stderr.write(msg+'\n')
