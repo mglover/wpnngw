@@ -47,7 +47,7 @@ any articles that have errors in processing
 
 ### executables
 
-addgroup.py sets the group directory, queue directory, and history.json 
+addgroup.py sets up the group directory, queue directory, and history.json 
 file for a new gatewayed group.
 
 update_news.py finds new wordpress posts and comments and posts them to 
