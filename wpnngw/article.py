@@ -183,7 +183,8 @@ class Article(object):
 			history['updated'] = iso_datestr(self.date_utc)
 
 		self.references = [MessageID(k, art[v], self.groups[0])
-			for k,v in {'post':'post', 'comment':'parent'}.items()]
+			for k,v in {'post':'post', 'comment':'parent'}.items()
+			if v in art]
 
 		return self
 
