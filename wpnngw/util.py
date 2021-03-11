@@ -43,16 +43,6 @@ def iso_datestr(utc_date):
 	return datetime.strftime(utc_date, '%Y-%m-%dT%H:%M:%S-00')
 	#datetime.strftime(date_utc, "%Y-%m-%dT%H:%M:%SZ"),
 
-def groupsdir():
-	"""return the path to the directory containing gatewayed group dirs
-	"""
-	dir = os.environ.get('WPNNGW_HOME')
-	if not dir: 
-		home = os.environ.get('HOME')
-		if not home: raise ValueError('no WPNNGW_HOME, nor HOME')
-		dir = os.path.join(home, 'wpnngw_groups')
-	return dir
-
 
 def inn_config(cfg=INNCONF):
 	def unquote(value):
@@ -91,7 +81,13 @@ class QueueDir(object):
 		self.cur = os.path.join(root, 'cur')
 		self.fin = os.path.join(root, 'fin')
 
-	def _mkdirs(self):
+	def exists(self):
+		return os.path.isdir(self.root) \
+			and os.path.isdir(self.new) \
+			and os.path.isdir(self.cur) \
+			and os.path.isdir(self.fin)
+
+	def create(self):
 		if not os.path.isdir(self.root):
 			os.mkdir(self.root)
 		for sub in [self.new, self.cur, self.fin]:
@@ -99,13 +95,13 @@ class QueueDir(object):
 				os.mkdir(sub)
 
 	def newfile(self, filename):
-		self._mkdirs()
+		self.create()
 		path = os.path.join(self.new, filename)
 		if os.path.exists(path): raise ValueError("File exists: %s" % path)
 		return path
 
 	def process(self, proc):
-		self._mkdirs()
+		self.create()
 		for f in os.listdir(self.new):
 			n = os.path.join(self.new, f)
 			c = os.path.join(self.cur, f)

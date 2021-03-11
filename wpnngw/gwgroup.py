@@ -4,19 +4,28 @@ gwgroup.py
 
 import json, os, subprocess, requests
 from wpnngw.article import Article
-from wpnngw.util import fatal, debug, utc_datetime, groupsdir, QueueDir
+from wpnngw.util import fatal, debug, utc_datetime, inn_config, QueueDir
 
 
 class GatewayedGroup(object):
 	def __init__(self, group):
 		self.group = group
-		dir = groupsdir()
-		self.groupdir = os.path.join(dir, group)
-		self.histfile = os.path.join(self.groupdir, 'history.json')
+		self.queue = QueueDir(os.path.join(self.dir(), 'queue'))
+		self.histfile = os.path.join(self.dir(), 'history.json')
 
+	def dir(self):
+		"""return the path to the directory containing gatewayed group dirs
+		"""
+		home = inn_config()['pathspool']
+		return os.path.join(home, 'wpnngw', 'groups', self.group)
 
 	def exists(self):
-		return os.path.isdir(self.groupdir)
+		return os.path.isdir(self.dir()) and self.queue.exists()
+
+	def create(self):
+		if not self.exists():
+			if not os.path.isdir(self.dir()): os.mkdir(self.dir())
+		self.queue.create()
 
 	def history_load(self):
 		return json.load(open(self.histfile))
@@ -63,7 +72,7 @@ class GatewayedGroup(object):
 
 		for a in new_posts + new_comments:
 			if not a: continue
-			path = QueueDir(self.groupdir).newfile(a.filename())
+			path = self.queue.newfile(a.filename())
 			postfile=open(path, 'w', encoding='utf8', newline=None)
 			postfile.write(a.asNetNews())
 			postfile.close()
@@ -72,14 +81,11 @@ class GatewayedGroup(object):
 
 
 	def netnews_post(self):
-		active = os.path.join(self.groupdir, 'active')
-		processed = os.path.join(self.groupdir, 'processed')
-
-		qdir = QueueDir(self.groupdir)
-		qdir.process(lambda x: subprocess.run(['inews', '-h', '-O', x]))
-		errors = qdir.errors()
+		self.queue.process(lambda x: subprocess.run(['inews', '-h', '-O', x]))
+		errors = self.queue.errors()
 		if errors:
-			fatal("%d articles in %s have errors" % (len(errors), qdir.cur))
+			fatal("%d articles in %s have errors" 
+				% (len(errors), self.queue.cur))
 
 
 	def wordpress_post(self, post_data):
@@ -88,7 +94,7 @@ class GatewayedGroup(object):
 
 		url = site + '/wp-json/wp/v2/comments'
 		resp = requests.post(url, json=post_data)
-		print("Status: %d\n\nRequest: \n%s\n\nResponse:\n%s" 
+		debug("Status: %d\n\nRequest: \n%s\n\nResponse:\n%s" 
 			% (resp.status_code, resp.request.body, resp.text))
 		return resp.status_code == 201
 

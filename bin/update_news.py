@@ -11,8 +11,7 @@ from wpnngw.article import Article
 from wpnngw.gwgroup import GatewayedGroup
 from wpnngw.util import inn_config, QueueDir
 
-
-QROOT=os.path.join(inn_config()['pathspool'],'wpnngw_incoming')
+QROOT=os.path.join(inn_config()['pathspool'],'wpnngw', 'modqueue')
 
 
 def post_comment(afile):
@@ -35,10 +34,12 @@ def post_comment(afile):
 
 def push_netnews():
 	qdir = QueueDir(QROOT)
+	qdir.create()
 	print('%d articles for netnews' % len(qdir.pending()))
 	qdir.process(post_comment)
 	errors = qdir.errors()
 	if errors: print('%d articles had errors' % len(errors))
+
 
 def pull_wordpress(groups):
 	for group in groups:

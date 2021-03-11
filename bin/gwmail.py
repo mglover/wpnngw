@@ -8,14 +8,17 @@ import os, sys, subprocess
 from datetime import datetime
 from wpnngw.util import inn_config, QueueDir
 
-QROOT=os.path.join(inn_config()['pathspool'],'wpnngw_incoming')
+QROOT=os.path.join(inn_config()['pathspool'],'wpnngw', 'modqueue')
 
 if __name__ == '__main__':
 	addresses = sys.argv[1:]
+	qdir = QueueDir(QROOT)
+	qdir.create()
+
 	if addresses and addresses[0].endswith('@wpnngw.local'):
 		group = addresses[0].rstrip('@wpnngw.local')
 		now = datetime.timestamp(datetime.now())
-		qfile = QueueDir(QROOT).newfile("%s-%s" % (group, now))
+		qfile = qdir.newfile("%s-%s" % (group, now))
 		with open(qfile, 'w') as qfd: qfd.write(sys.stdin.read())
 		qfd.close()
 

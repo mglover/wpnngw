@@ -3,16 +3,15 @@
 addgroup.py
 """
 import sys, os, json
-from wpnngw.util import groupsdir, fatal
+from wpnngw.util import fatal
+from wpnngw.gwgroup import GatewayedGroup
+
 
 def add_group(group, site):
-	dir = groupsdir()
-	groupdir = os.path.join(dir, group)
-
-	if not os.path.isdir(groupdir): os.mkdir(groupdir)
-	for subdir in ('incoming', 'active', 'processed'):
-		sp = os.path.join(groupdir, subdir)
-		if not os.path.isdir(sp): os.mkdir(sp)
+	grp = GatewayedGroup(group)
+	if grp.exists:
+		fatal("group %s exists")
+	grp.create()
 
 	d = {
 		'source': site,
@@ -20,7 +19,7 @@ def add_group(group, site):
 		'posts': {},
 		'updated': "1970-01-01T00:00:00"
 	}
-	history = os.path.join(groupdir, 'history.json')
+	history = os.path.join(grp.dir(), 'history.json')
 	with open(history, 'w') as f:
 		json.dump(d, f, indent=2)
 
