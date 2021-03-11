@@ -9,42 +9,58 @@ Uses the Wordpress REST API to fetch new posts and comments, and to
 create new comments to existing posts.
 
 You must be running the INN news server on the local machine: articles 
-are injected using the 'inews' executable.  
+are injected using the 'inews' executable.
 
-### environment
+### files
 
-wpnngw uses the directory $HOME/wpnngw_groups to store status and 
-configuration data for gatewayed groups.  the environment variable 
-WPNNGW_HOME can be used to override this.  If this directory does not 
-exist, the tools will fail.  Data for each gatewayed group is stored in a subdirectory with the name 
-of its gatewayed group.  
+this repository should be cloned into the pathspool directory specified 
+in inn.conf.  This is usually '/var/spool/news'.  All files will be 
+stored in $pathspool/wpnngw ('$wpnngw')
+
+the directory $wpnngw/groups stores status and configuration data for 
+gatewayed groups.  Data for each gatewayed group is stored in a 
+subdirectory with the name of its gatewayed group.
 
 The subdirectory for each groups holds:
 
- * a 'history.json' with the name of the group, the URL of the 
+ * 'history.json' contains the name of the group, the URL of the 
 wordpress site, the list of top-level posts, and the timestamp of the 
 most recent post or comment that was processed.
 
- * the directories 'incoming', 'active', and 'processed' which hold 
-NetNews-formatted files containing articles that, respectively, are 
-awaiting processing, are currently being processed, and have been 
-successfully posted to the group.  Any articles with processing errors 
-can be found in the 'active' directory.
+ * 'queue' is a directory holding articles from wordpress that are 
+awaiting posting to the newsgroup.
 
-### usage
+$wpnngw/modqueue is a directory holding articles from newsgroups that are 
+awaiting posting to wordpress.  
 
-addgroup.py does the initial setup of the initial directory, 
-subdirectories, and history.json file for a new group gateway.
+#### queues
 
-update_news.py takes a group name as the only parameter, finds new 
-articles from the source WordPress site, and posts them to the group
+the $group/queue and modqueue directories are designed to handle 
+processing failures gracefully (thanks: DJB).  They contain three 
+subdirectories:
 
-post_comment.py takes the filename of a NetNews-formatted file, parses 
-it to determine the site and top-level post it applies to, and posts a 
-comment using the REST API.
+ * 'new' holds incoming articles that have not yet been processed
+ * 'cur' holds articles that are currently being processed, and retains 
+any articles that have errors in processing
+ * 'fin' holds articles that have successfully beenn processed
 
-gwmail.py is installed an INN's mta program, and intercepts articles 
-mailed to group moderators and posts them to the backing WordPress blog.
+
+### executables
+
+addgroup.py sets the group directory, queue directory, and history.json 
+file for a new gatewayed group.
+
+update_news.py takes a group names as the only parameters, finds new 
+articles from the source WordPress sites, and posts them to the groups
+
+gwmail.py intercepts articles mailed to group moderators and queue's 
+them for posting.  
+
+user.py manages the $pathspool/users file for INN to use for 
+authentication.
+
+
+### wordpress configuration
 
 Posting requires 'rest_allow_anonymous_comments' to be set in the WP
 site's config, by adding this line to your theme's functions.php:
@@ -55,18 +71,36 @@ See:
 
 https://developer.wordpress.org/reference/hooks/rest_allow_anonymous_comments/
 
-user.py is a utility for managing a password file suitable for INN to 
-use for authentication.
+
+### INN configuration
+
+wpnngw hooks into INNs moderation pathway to catch netnews posts and 
+forward them to wordpress. 
+
+First, all gatewayed newsgroups need to be marked as moderated.  This 
+will cause INN to look in the 'moderators' file to find the moderation 
+email address.
+
+Next, all gatewayed groups must have a matching line in the 'moderators' 
+file, the email address for that line should be '%s@wpnngw.local'.
+
+Finally, the 'mta' parameter in inn.conf must hold the full path to the 
+gwmail.py executable.
+
 
 ### TODO
 
-gwmail.py should store-and-forward, not call post_comment directly. 
-
 Convert quoted text<->html
+
+gwmail silently drops all mail not for gatewayed group moderators.
+
+can innd.conf hold configuration data for us?
 
 addgroup sets new groups up to fetch all posts starting with the UNIX 
 epoch.  This is unlikely what most users want: there should be a 
 commandline option to set this.
 
+addgroup should(?) run ctlinnd to create the group and set moderation 
+status if necessary
 
 
