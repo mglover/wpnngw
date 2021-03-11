@@ -4,7 +4,7 @@ gwgroup.py
 
 import json, os, subprocess, requests
 from wpnngw.article import Article
-from wpnngw.util import fatal, debug, utc_datetime, groupsdir
+from wpnngw.util import fatal, debug, utc_datetime, groupsdir, QueueDir
 
 
 class GatewayedGroup(object):
@@ -13,7 +13,10 @@ class GatewayedGroup(object):
 		dir = groupsdir()
 		self.groupdir = os.path.join(dir, group)
 		self.histfile = os.path.join(self.groupdir, 'history.json')
-		self.rundir = os.path.join(self.groupdir, 'incoming')
+
+
+	def exists(self):
+		return os.path.isdir(self.groupdir)
 
 	def history_load(self):
 		return json.load(open(self.histfile))
@@ -60,8 +63,7 @@ class GatewayedGroup(object):
 
 		for a in new_posts + new_comments:
 			if not a: continue
-			path = os.path.join(self.rundir, a.filename())
-			debug(path)
+			path = QueueDir(self.groupdir).newfile(a.filename())
 			postfile=open(path, 'w', encoding='utf8', newline=None)
 			postfile.write(a.asNetNews())
 			postfile.close()
@@ -73,18 +75,11 @@ class GatewayedGroup(object):
 		active = os.path.join(self.groupdir, 'active')
 		processed = os.path.join(self.groupdir, 'processed')
 
-		for article in os.listdir(self.rundir):
-			i = os.path.join(self.rundir, article)
-			a = os.path.join(active, article)
-			p = os.path.join(processed, article)
-			os.rename(i, a)
-			ret = subprocess.run(['inews', '-h', '-O', a])
-			if ret.returncode == 0:
-				os.rename(a, p)
-
-		errors = os.listdir(active)
+		qdir = QueueDir(self.groupdir)
+		qdir.process(lambda x: subprocess.run(['inews', '-h', '-O', x]))
+		errors = qdir.errors()
 		if errors:
-			fatal("%d articles in %s have errors" % (len(errors), active))
+			fatal("%d articles in %s have errors" % (len(errors), qdir.cur))
 
 
 	def wordpress_post(self, post_data):
@@ -93,5 +88,8 @@ class GatewayedGroup(object):
 
 		url = site + '/wp-json/wp/v2/comments'
 		resp = requests.post(url, json=post_data)
-		return resp
+		print("Status: %d\n\nRequest: \n%s\n\nResponse:\n%s" 
+			% (resp.status_code, resp.request.body, resp.text))
+		return resp.status_code == 201
+
 
