@@ -60,17 +60,13 @@ use for authentication.
 
 ### TODO
 
+gwmail.py should store-and-forward, not call post_comment directly. 
+
+Convert quoted text<->html
+
 addgroup sets new groups up to fetch all posts starting with the UNIX 
 epoch.  This is unlikely what most users want: there should be a 
 commandline option to set this.
-
-responses to non-top-level posts currently fail as we have no way of 
-knowing (if the newsreader only included the comment's id, not the 
-post's, in the References: header) what post it should be applied to. 
-Options: including the top-level post's id in the msgid of every comment, 
-querying wordpress to figure out which post the comment belongs to.
-
-
 
 
 
