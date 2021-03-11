@@ -156,9 +156,15 @@ class Article(object):
 			'author_email': self.author_email,
 			'content' : self.content
 		}
-		parent = self.root_id()
-		if parent: data['post'] = parent.uid
-		else: fatal("no parent in %s" % " ".join([str(r)
+		for r in self.references:
+			if r.category == 'post':
+				if 'post' in data: fatal("comment for multiple posts")
+				else: data['post'] = r.uid
+			elif r.category == 'comment':
+				# use the last comment listed as parent
+				data['parent'] = r.uid
+
+		if 'post' not in data: fatal("no post in %s" % " ".join([str(r)
 			for r in self.references]))
 		return data
 
@@ -176,7 +182,11 @@ class Article(object):
 		if self.date_utc > updated:
 			history['updated'] = iso_datestr(self.date_utc)
 
+		self.references = [MessageID(k, art[v], self.groups[0])
+			for k,v in {'post':'post', 'comment':'parent'}.items()]
+
 		return self
+
 
 	@classmethod
 	def fromWordPressPost(cls, history, post):
@@ -206,9 +216,6 @@ class Article(object):
 
 		self.wptype = 'comment'
 		self.title = history['posts'][pid]
-		self.references = [MessageID(
-			category='post', uid=pid, domain=history['group'])]
-
 
 		return self
 
