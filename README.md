@@ -50,11 +50,12 @@ any articles that have errors in processing
 addgroup.py sets the group directory, queue directory, and history.json 
 file for a new gatewayed group.
 
-update_news.py takes a group names as the only parameters, finds new 
-articles from the source WordPress sites, and posts them to the groups
+update_news.py finds new wordpress posts and comments and posts them to 
+newsgroups, and sends any newsgroup articles queued for moderation and 
+sends them to wordpress.
 
-gwmail.py intercepts articles mailed to group moderators and queue's 
-them for posting.  
+gwmail.py intercepts articles posted to newsgroups and queues them to be 
+posted to wordpress
 
 user.py manages the $pathspool/users file for INN to use for 
 authentication.
