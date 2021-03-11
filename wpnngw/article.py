@@ -4,7 +4,8 @@ article.py
 
 import email.message, email.policy, textwrap, requests, json, re
 from bs4 import BeautifulSoup
-from wpnngw.util import debug, utc_datetime, iso_datestr, rfc_datestr, utc_now
+from wpnngw.util import debug, fatal, utc_datetime, iso_datestr, \
+	rfc_datestr, utc_now
 
 
 known_authors = {}
@@ -42,7 +43,7 @@ class MessageID(object):
 		try:
 			postid, self.domain = re.search("^<([^@]*)@([^>]*)>$", idstr).groups()
 			self.category, self.uid = postid.split('-')
-		except:
+		except Exception:
 			return None
 		return self
 
@@ -51,12 +52,12 @@ class MessageID(object):
 		self = cls()
 		self.category = art.wptype
 		self.uid = art.wpid
-		# XXX wrong for crossposted articles
+		# XXX wrong for crossposted articles?
 		self.domain = art.groups[0]
 		return self
 
 
-	def asString(self):
+	def __str__(self):
 		return "<%s-%s@%s>" % (self.category, self.uid, self.domain)
 
 
@@ -141,7 +142,7 @@ class Article(object):
 		self.author_email = frm.username+'@'+frm.domain
 
 		self.references = [MessageID.fromString(r)
-			for r in msg['References'].split(',')]
+			for r in msg['References'].split()]
 
 		self.content = unwrap(msg.get_content())
 
@@ -157,6 +158,8 @@ class Article(object):
 		}
 		parent = self.root_id()
 		if parent: data['post'] = parent.uid
+		else: fatal("no parent in %s" % " ".join([str(r)
+			for r in self.references]))
 		return data
 
 
@@ -221,13 +224,13 @@ class Article(object):
 		if self.author_email: frm_email = self.author_email 
 		else: frm_email = "poster@email.invalid"
 		msg['From'] = '"%s" <%s>' % (self.author_name, frm_email)
-		msg['Message-ID'] = MessageID.fromArticle(self).asString()
+		msg['Message-ID'] = str(MessageID.fromArticle(self))
 		msg['Newsgroups'] = ','.join(self.groups)
 		msg['Path'] = 'not-for-mail'
 		msg['Subject'] = self.title
 		msg['Approved'] = 'moderator@email.invalid'
 		if self.references:
-			msg['References'] = ','.join([r.asString()
+			msg['References'] = ' '.join([str(r)
 				 for r in self.references])
 
 		content = self.text_from_html(self.content)
