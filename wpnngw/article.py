@@ -170,17 +170,15 @@ class Article(object):
 
 
 	@classmethod
-	def fromWordPressGeneric(cls, history, art):
+	def fromWordPressGeneric(cls, status, art):
 		self = cls()
-		self.groups.append(history['group'])
+		self.groups.append(status.get_group())
 		self.date_utc = utc_datetime(art['date_gmt'])
 		self.author_name = art.get('author_name')
 		self.wpid = art['id']
 		self.content = art['content']['rendered']
 
-		updated = utc_datetime(history['updated'])
-		if self.date_utc > updated:
-			history['updated'] = iso_datestr(self.date_utc)
+		status.maybe_update(self.date_utc)
 
 		self.references = [MessageID(k, art[v], self.groups[0])
 			for k,v in {'post':'post', 'comment':'parent'}.items()
@@ -190,33 +188,31 @@ class Article(object):
 
 
 	@classmethod
-	def fromWordPressPost(cls, history, post):
+	def fromWordPressPost(cls, status, post):
 		debug('adding post id %s' % post['id'])
 
-		self = cls.fromWordPressGeneric(history, post)
-
-		site = history['source']
+		self = cls.fromWordPressGeneric(status, post)
+		site = status.get_site()
 
 		self.wptype='post'
 		self.title = post['title']['rendered']
 		self.author_name = author_from_id(site, post['author'])
 
-		history['posts'][post['id']] = self.title
+		status.add_post(post['id'], self.title)
 		return self
 
 
 	@classmethod
-	def fromWordPressComment(cls, history, comment):
-		pid = str(comment['post'])
-		if pid not in history['posts']:
-			debug("skip comment for %s type(%s), not in %s" %
-				 (pid, type(pid), history['posts']))
+	def fromWordPressComment(cls, status, comment):
+		title = status.get_post(comment['post'])
+
+		if not title:
 			return None
 
-		self = cls.fromWordPressGeneric(history, comment)
+		self = cls.fromWordPressGeneric(status, comment)
 
 		self.wptype = 'comment'
-		self.title = history['posts'][pid]
+		self.title = title
 
 		return self
 

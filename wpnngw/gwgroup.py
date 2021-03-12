@@ -4,14 +4,57 @@ gwgroup.py
 
 import json, os, subprocess, requests
 from wpnngw.article import Article
-from wpnngw.util import fatal, debug, utc_datetime, inn_config, QueueDir
+from wpnngw.util import fatal, debug, iso_datestr, utc_datetime, \
+	inn_config, QueueDir
+
+class GroupStatus(object):
+	def __init__(self, grpobj):
+		self.load(os.path.join(grpobj.dir(), 'history.json'))
+
+	def load(self, file=None):
+		if file: self.file = file
+		if not file: raise ValueError("no filename stored or given")
+		self.data =  json.load(open(self.file))
+		for k in ['source', 'group', 'posts', 'updated']:
+			assert k in self.data
+
+	def save(self):
+		json.dump(self.data, open(self.file, 'w'), indent=1)
+		pass
+
+
+	def last_update(self):
+		return utc_datetime(self.data['updated'])
+
+	def maybe_update(self, newdate):
+		olddate = utc_datetime(self.data['updated'])
+		if newdate > olddate:
+			self.data['updated'] = iso_datestr(newdate)
+
+
+	def get_site(self):
+		return self.data['source']
+
+	def get_group(self):
+		return self.data['group']
+
+
+	def get_post(self,post_id):
+		post_id = str(post_id)
+		if post_id not in self.data['posts']:
+			debug("skip comment for %s type(%s), not in %s" %
+				 (post_id, type(post_pid), self.data['posts']))
+		return self.data['posts'].get(str(post_id), False)
+
+	def add_post(self, post_id, title):
+		self.data['posts'][str(post_id)] = title
 
 
 class GatewayedGroup(object):
 	def __init__(self, group):
 		self.group = group
 		self.queue = QueueDir(os.path.join(self.dir(), 'queue'))
-		self.histfile = os.path.join(self.dir(), 'history.json')
+		self.status = GroupStatus(self)
 
 	def dir(self):
 		"""return the path to the directory containing gatewayed group dirs
@@ -27,11 +70,6 @@ class GatewayedGroup(object):
 			if not os.path.isdir(self.dir()): os.mkdir(self.dir())
 		self.queue.create()
 
-	def history_load(self):
-		return json.load(open(self.histfile))
-
-	def history_save(self, history):
-		json.dump(history, open(self.histfile, 'w'), indent=1)
 
 	def unpage(self, url, **params):
 		""" Page through WP API responses until we have all the data
@@ -52,15 +90,14 @@ class GatewayedGroup(object):
 
 
 	def wordpress_fetch(self):
-		history = self.history_load()
-		site = history['source']
-		after = utc_datetime(history['updated'])
+		after = self.status.last_update()
+		site = self.status.get_site()
 
 		try:
-			new_posts = [Article.fromWordPressPost(history, p)
+			new_posts = [Article.fromWordPressPost(self.status, p)
 				for p in self.unpage(site+'/wp-json/wp/v2/posts', after=after)]
 
-			new_comments = [Article.fromWordPressComment(history, c)
+			new_comments = [Article.fromWordPressComment(self.status, c)
 				for c in self.unpage(site+'/wp-json/wp/v2/comments', after=after)]
 		except requests.exceptions.ConnectionError:
 			print('%s: connection to %s failed' % (self.group,site))
@@ -77,7 +114,7 @@ class GatewayedGroup(object):
 			postfile.write(a.asNetNews())
 			postfile.close()
 
-		self.history_save(history)
+		self.status.save()
 
 
 	def netnews_post(self):
@@ -89,9 +126,7 @@ class GatewayedGroup(object):
 
 
 	def wordpress_post(self, post_data):
-		history = self.history_load()
-		site = history['source']
-
+		site = self.status.get_site()
 		url = site + '/wp-json/wp/v2/comments'
 		resp = requests.post(url, json=post_data)
 		debug("Status: %d\n\nRequest: \n%s\n\nResponse:\n%s" 
