@@ -8,14 +8,13 @@ Translate between a WordPress blog and a NetNews group.
 Uses the Wordpress REST API to fetch new posts and comments, and to 
 create new comments to existing posts.
 
-You must be running the INN news server on the local machine: articles 
-are injected using the 'inews' executable.
+Interacts with the INN news server running on the local machine.
+
 
 ### files
 
-this repository should be cloned into the pathspool directory specified 
-in inn.conf.  This is usually '/var/spool/news'.  All files will be 
-stored in $pathspool/wpnngw ('$wpnngw')
+All files will be stored in the directory set as 'pathspool' in your 
+inn.conf file, in a subdirectory named 'wpnngw'.
 
 the directory $wpnngw/groups stores status and configuration data for 
 gatewayed groups.  Data for each gatewayed group is stored in a 
@@ -78,18 +77,41 @@ https://developer.wordpress.org/reference/hooks/rest_allow_anonymous_comments/
 wpnngw hooks into INNs moderation pathway to catch netnews posts and 
 forward them to wordpress. 
 
-First, all gatewayed newsgroups need to be marked as moderated.  This 
-will cause INN to look in the 'moderators' file to find the moderation 
-email address.
+First, the 'mta' parameter in inn.conf must hold the full path to the 
+gwmail.py executable.
 
 Next, all gatewayed groups must have a matching line in the 'moderators' 
 file, the email address for that line should be '%s@wpnngw.local'.
 
-Finally, the 'mta' parameter in inn.conf must hold the full path to the 
-gwmail.py executable.
+Finally, all gatewayed newsgroups need to be marked as moderated.  This 
+will cause INN to look in the 'moderators' file to find the moderation 
+email address.  addgroup.py will automatically create groups as (or set 
+existing groups to) moderated groups.
 
 
+### wpnngw configuration
+
+wpnngw is written for and probably requires python 3.  it certainly 
+requires the following python modules:
+
+ * dateutil (`pip install python-dateutil`)
+ * Beautiful Soup (`pip install beautifulsoup4`)
+
+wpnngw was developed and tested installed into pathspool/wpnngw 
+directory. It probably, and certainly should, work no matter where you 
+install it, but YMMV.
+
+You will need the full path to the wpnngw/wpnngw directory in PYTHONPATH.
+
+You will likely want the full path to wpnngw/bin, and inn's pathbin in PATH
+ 
 ### TODO
+
+$wpnngw/groups directory should get created by automagically
+
+look up bin directory in inn.conf
+
+
 
 Convert quoted text<->html
 
@@ -100,8 +122,4 @@ can innd.conf hold configuration data for us?
 addgroup sets new groups up to fetch all posts starting with the UNIX 
 epoch.  This is unlikely what most users want: there should be a 
 commandline option to set this.
-
-addgroup should(?) run ctlinnd to create the group and set moderation 
-status if necessary
-
 
