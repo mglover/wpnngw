@@ -32,7 +32,7 @@ def add_group_files(group, site):
 		'source': site,
 		'group': group,
 		'posts': {},
-		'updated': "1970-01-01T00:00:00"
+		'updated': "1970-01-01T00:00:00-00"
 	}
 	history = os.path.join(grp.dir(), 'history.json')
 	with open(history, 'w') as f:
