@@ -9,6 +9,7 @@ from wpnngw.gwgroup import GatewayedGroup
 
 def add_newsgroup(group):
 	active = os.path.join(inn_config()['pathdb'], 'active')
+	ctlinnd = os.path.join(inn_config()['pathbin'], 'ctlinnd')
 	cmd = 'newgroup'
 	for l in open(active).readlines():
 		name, _, _, status = l.split()
@@ -17,7 +18,7 @@ def add_newsgroup(group):
 			print("newsgroup %s exists" % group)
 			return   #group exists and is moderated, nothing to do
 		cmd = 'changegroup'
-	ret = subprocess.run(['ctlinnd', cmd, group, 'm'])
+	ret = subprocess.run([ctlinnd, cmd, group, 'm'])
 	if ret.returncode != 0:
 		fatal("ctlinnd failed with return code %d" % ret.returncode)
 
@@ -26,6 +27,7 @@ def add_group_files(group, site):
 	grp = GatewayedGroup(group)
 	if grp.exists():
 		print("group directory %s exists" % grp.dir())
+		return
 	grp.create()
 
 	d = {
