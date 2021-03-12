@@ -88,32 +88,35 @@ class GatewayedGroup(object):
 			if len(new_dicts) < params['per_page']: return adicts
 			params['page'] += 1
 
-
-	def wordpress_fetch(self):
-		after = self.status.last_update()
+	def _process_pages(self, category, proc, after):
 		site = self.status.get_site()
+		url = site + '/wp-json/wp/v2/' + category
 
 		try:
-			new_posts = [Article.fromWordPressPost(self.status, p)
-				for p in self.unpage(site+'/wp-json/wp/v2/posts', after=after)]
-
-			new_comments = [Article.fromWordPressComment(self.status, c)
-				for c in self.unpage(site+'/wp-json/wp/v2/comments', after=after)]
+			articles = [proc(self.status, a)
+				for a in self.unpage(url, after=after)]
 		except requests.exceptions.ConnectionError:
 			print('%s: connection to %s failed' % (self.group,site))
-			return
-		else:
-			print('%s: %d new posts, %d new comments' %
-				(self.group, len(new_posts), len(new_comments)))
+			return 0
 
-
-		for a in new_posts + new_comments:
+		for a in articles:
 			if not a: continue
 			path = self.queue.newfile(a.filename())
 			postfile=open(path, 'w', encoding='utf8', newline=None)
 			postfile.write(a.asNetNews())
 			postfile.close()
 
+		return len(articles)
+
+
+	def wordpress_fetch(self):
+		after = self.status.last_update()
+		site = self.status.get_site()
+
+		plen = self._process_pages('posts', Article.fromWordPressPost, after)
+		clen = self._process_pages('comments', Article.fromWordPressComment, after)
+
+		print('%s: %d new posts, %d new comments' % (self.group, plen, clen))
 		self.status.save()
 
 
