@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-""" update news.py
-	pull new posts and comments from upstream wordpress
-	and push netnews up
+""" nn2wp.py
+	process the queue of incoming netnews articles
+	and send them to the correct wordpress site for moderation
 """
 
-import sys, os
-from requests.exceptions import ConnectionError
+import os
 
 from wpnngw.article import Article
 from wpnngw.gwgroup import GatewayedGroup
@@ -41,13 +40,5 @@ def push_netnews():
 	if errors: print('%d articles had errors' % len(errors))
 
 
-def pull_wordpress(groups):
-	for group in groups:
-		g = GatewayedGroup(group)
-		g.wordpress_fetch()
-		g.netnews_post()
-
-
 if __name__ == '__main__':
-	pull_wordpress(sys.argv[1:])
 	push_netnews()
