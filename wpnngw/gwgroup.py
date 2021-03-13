@@ -43,7 +43,7 @@ class GroupStatus(object):
 		post_id = str(post_id)
 		if post_id not in self.data['posts']:
 			debug("skip comment for %s type(%s), not in %s" %
-				 (post_id, type(post_pid), self.data['posts']))
+				 (post_id, type(post_id), self.data['posts']))
 		return self.data['posts'].get(str(post_id), False)
 
 	def add_post(self, post_id, title):
