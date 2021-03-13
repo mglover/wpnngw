@@ -1,0 +1,11 @@
+#!/bin/sh
+
+export PYTHONPATH=/usr/local/news/spool/wpnngw
+export NNTPSERVER=localhost
+
+WPNNGW_BIN=/usr/local/news/spool/wpnngw/bin
+
+chpst -u news $WPNNGW_BIN/nn2wp.py
+sleep 10
+chpst -u news $WPNNGW_BIN/wp2nn.py
+sleep 120
