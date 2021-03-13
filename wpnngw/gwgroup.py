@@ -112,7 +112,11 @@ class GatewayedGroup(object):
 
 
 	def netnews_post(self):
-		self.queue.process(lambda x: subprocess.run(['inews', '-h', '-O', x]))
+		def proc(x):
+			ret = subprocess.run(['inews', '-h', '-O', x])
+			return ret.returncode == 0
+
+		self.queue.process(proc)
 		errors = self.queue.errors()
 		if errors:
 			fatal("%d articles in %s have errors" 
