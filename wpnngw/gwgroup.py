@@ -66,8 +66,9 @@ class GatewayedGroup(object):
 		return os.path.isdir(self.dir()) and self.queue.exists()
 
 	def create(self):
-		if not self.exists():
-			if not os.path.isdir(self.dir()): os.mkdir(self.dir())
+		group_root = os.dirname(self.dir())
+		if not os.path.isdir(group_root): os.mkdir(group_root)
+		if not os.path.isdir(self.dir()): os.mkdir(self.dir())
 		self.queue.create()
 
 
