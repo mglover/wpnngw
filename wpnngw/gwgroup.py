@@ -89,10 +89,7 @@ class GatewayedGroup(object):
 				for a in adicts:
 					art = proc(self.status, a)
 					if not art: continue
-					path = self.queue.newfile(art.filename())
-					postfile=open(path, 'w', encoding='utf8', newline=None)
-					postfile.write(art.asNetNews())
-					postfile.close()
+					art.enqueue(self.queue)
 					count += 1
 
 				if len(articles) < params['per_page']: return count

@@ -243,11 +243,13 @@ class Article(object):
 		return msg.as_string()
 
 
-	def filename(self):
+	def enqueue(self, queue):
 		if self.wptype == 'post':
-			return '00post-%s' % self.wpid
+			filename = '00post-%s' % self.wpid
 		else:
 			root = self.root_id()
-			return 'comment-%s-%s' % (root.uid, self.wpid)
+			filename = 'comment-%s-%s' % (root.uid, self.wpid)
 
-
+		path = queue.newfile(filename)
+		with open(path, 'w', encoding='utf8', newline=None) as postfile:
+			 postfile.write(self.asNetNews())
