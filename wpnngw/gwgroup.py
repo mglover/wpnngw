@@ -113,7 +113,8 @@ class GatewayedGroup(object):
 
 	def netnews_post(self):
 		def proc(x):
-			ret = subprocess.run(['inews', '-h', '-O', x])
+			inews = os.path.join(inn_config()['pathbin'], 'inews')
+			ret = subprocess.run([inews, '-h', '-O', x])
 			return ret.returncode == 0
 
 		self.queue.process(proc)
