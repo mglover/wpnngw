@@ -49,9 +49,11 @@ any articles that have errors in processing
 addgroup.py sets up the group directory, queue directory, and history.json 
 file for a new gatewayed group.
 
-update_news.py finds new wordpress posts and comments and posts them to 
-newsgroups, and sends any newsgroup articles queued for moderation and 
-sends them to wordpress.
+wp2nn.py finds finds new wordpress posts and comments, and posts them to 
+newsgroups
+
+nn2wp sends any newsgroup articles queued for moderation and sends them 
+to wordpress.
 
 gwmail.py intercepts articles posted to newsgroups and queues them to be 
 posted to wordpress
@@ -105,16 +107,34 @@ you install it, but YMMV.
 Confirm that the INNCONF variable at the top of wpnngw/util.py points to 
 your inn.conf file
 
-You will need the full path to the wpnngw/wpnngw directory in PYTHONPATH.
+### running with runit
+
+wpnngw comes with a 'runit' directory suitable for use with the runit 
+service management system.  The files in this directory run the wp2nn 
+and nn2wp scripts, and log output to files in the wpnngw/log directory.
+
+First make sure `runit` is installed on your system.  If you're using a 
+systemd-based distribution (like most of linux ca. 2021), the 
+runit-systemd package will install and start it for you.
+
+Next, confirm that the paths at the top of the runit/run and 
+runit/log/run files are correct, and edit as necessary.  Also edit the 
+'sleep' commands to your liking -- they control how often the scripts 
+run.
+
+Finally, run `ps` as root -- you should see a line containing 'runsvdir 
+<directory>'.  <directory> is where runit will look for new services; 
+run `cd <directory>`, then `ln -s <full-path-to-wpnngws-runit-dir> 
+wpnngw`.  The wpnngw scripts should start runnig immediatly, and you 
+will be able to see output in wpnngw/log/current.
 
  
 ### TODO
 
-Convert quoted text<->html
+Convert quoted text<->html. '>' quotes from netnews are getting 
+swallowed by the conversion to wordpress html.
 
 gwmail silently drops all mail not for gatewayed group moderators.
-
-can innd.conf hold configuration data for us?
 
 addgroup sets new groups up to fetch all posts starting with the UNIX 
 epoch.  This is unlikely what most users want: there should be a 
