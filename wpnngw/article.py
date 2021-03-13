@@ -182,7 +182,7 @@ class Article(object):
 
 		self.references = [MessageID(k, art[v], self.groups[0])
 			for k,v in {'post':'post', 'comment':'parent'}.items()
-			if v in art]
+			if art.get(v)]
 
 		return self
 
