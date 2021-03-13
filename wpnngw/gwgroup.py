@@ -71,43 +71,36 @@ class GatewayedGroup(object):
 		self.queue.create()
 
 
-	def unpage(self, url, **params):
-		""" Page through WP API responses until we have all the data
-		"""
-		params['page'] = 1
-		if 'per_page' not in params: params['per_page'] = 100
-		adicts = []
-
-		while True:
-			resp = requests.get(url, params)
-			new_dicts = json.loads(resp.text)
-			if type(new_dicts) is dict:
-				# error response
-				fatal(resp.text)
-			adicts += new_dicts
-			if len(new_dicts) < params['per_page']: return adicts
-			params['page'] += 1
-
 	def _process_pages(self, category, proc, after):
 		site = self.status.get_site()
 		url = site + '/wp-json/wp/v2/' + category
-
+		params = {'page': 1, 'after': after, 'per_page': 100}
+		count = 0
+		more = True
 		try:
-			articles = [proc(self.status, a)
-				for a in self.unpage(url, after=after)]
-		except requests.exceptions.ConnectionError:
+			while more:
+				resp = requests.get(url, params)
+				adicts = json.loads(resp.text)
+				if type(adicts) is dict:
+					# error response
+					raise ValueError(resp.text)
+
+				articles = [proc(self.status, a) for a in adicts]
+				for a in adicts:
+					art = proc(self.status, a)
+					if not art: continue
+					path = self.queue.newfile(art.filename())
+					postfile=open(path, 'w', encoding='utf8', newline=None)
+					postfile.write(art.asNetNews())
+					postfile.close()
+					count += 1
+
+				if len(articles) < params['per_page']: return count
+				else: params['page'] += 1
+
+		except (ValueError, requests.exceptions.ConnectionError):
 			print('%s: connection to %s failed' % (self.group,site))
-			return 0
-
-		for a in articles:
-			if not a: continue
-			path = self.queue.newfile(a.filename())
-			postfile=open(path, 'w', encoding='utf8', newline=None)
-			postfile.write(a.asNetNews())
-			postfile.close()
-
-		return len(articles)
-
+			return count
 
 	def wordpress_fetch(self):
 		after = self.status.last_update()
