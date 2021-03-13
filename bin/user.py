@@ -3,13 +3,9 @@
 #manage a flat-file of usernames and passwords
 
 import os, sys, crypt, getpass, random
-from wpnngw.util import inn_config
+from wpnngw.util import inn_config, fatal
 
-userfile = os.path.join(inn_config()['pathspool'], "users")
-
-def fatal(msg):
-	sys.stderr.write(msg+'\n')
-	sys.exit(1)
+userfile = os.path.join(inn_config()['pathdb'], "users")
 
 def readusers(file):
 	try:
