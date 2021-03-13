@@ -96,22 +96,19 @@ requires the following python modules:
 
  * dateutil (`pip install python-dateutil`)
  * Beautiful Soup (`pip install beautifulsoup4`)
+ * lxml (`pip install lxml`)
 
 wpnngw was developed and tested installed into pathspool/wpnngw 
-directory. It probably, and certainly should, work no matter where you 
-install it, but YMMV.
+directory. It probably will, and certainly should, work no matter where 
+you install it, but YMMV.
+
+Confirm that the INNCONF variable at the top of wpnngw/util.py points to 
+your inn.conf file
 
 You will need the full path to the wpnngw/wpnngw directory in PYTHONPATH.
 
-You will likely want the full path to wpnngw/bin, and inn's pathbin in PATH
  
 ### TODO
-
-$wpnngw/groups directory should get created by automagically
-
-look up bin directory in inn.conf
-
-
 
 Convert quoted text<->html
 
