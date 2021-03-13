@@ -51,6 +51,7 @@ class GroupStatus(object):
 
 
 class GatewayedGroup(object):
+	root = os.path.join(inn_config()['pathspool'], 'wpnngw', 'groups')
 	def __init__(self, group):
 		self.group = group
 		self.queue = QueueDir(os.path.join(self.dir(), 'queue'))
@@ -59,8 +60,7 @@ class GatewayedGroup(object):
 	def dir(self):
 		"""return the path to the directory containing gatewayed group dirs
 		"""
-		home = inn_config()['pathspool']
-		return os.path.join(home, 'wpnngw', 'groups', self.group)
+		return os.path.join(self.root, self.group)
 
 	def exists(self):
 		return os.path.isdir(self.dir()) and self.queue.exists()

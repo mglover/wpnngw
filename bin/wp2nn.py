@@ -3,7 +3,7 @@
  	fetch comments from gatewayed wordpress sites
 	and post them to the correct netnews groups
 """
-import sys
+import sys, os
 from wpnngw.gwgroup import GatewayedGroup
 
 def pull_wordpress(groups):
@@ -14,4 +14,8 @@ def pull_wordpress(groups):
 
 
 if __name__ == '__main__':
-	pull_wordpress(sys.argv[1:])
+	groups = sys.argv[1:]
+	if not groups:
+		groups = os.listdir(GatewayedGroup.root)
+	if len(groups) == 0: print("no groups found")
+	pull_wordpress(groups)
