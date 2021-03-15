@@ -29,6 +29,30 @@ def unwrap(text):
 	"""
 	return re.sub('[^\n]\n[^\n]', '', text)
 
+def foldfix(msg):
+	""" counteract a python 3.8.5 bug where some header lines
+	are folded immediately after the colon following the header name
+	(which is breaking inews)
+	"""
+	in_header = True
+	buf = ''
+	outmsg = ''
+	for line in msg.split('\n'):
+		if len(line) == 0:
+			in_header=False
+
+		if in_header:
+			if line.endswith(':') and ' ' not in line:
+				# bad header!
+				buf = line
+				continue
+			else:
+				if buf:
+					line = buf + line
+					buf = ''
+		outmsg += line + '\n'
+	return outmsg
+
 
 class MessageID(object):
 	def __init__(self, category=None, uid=None, domain=None):
