@@ -173,6 +173,12 @@ class Article(object):
 		return self
 
 
+	@classmethod
+	def fromNetNewsFile(cls, file):
+		with open(file) as f:
+			return cls.fromNetNews(f.read())
+
+
 	def asWordPress(self):
 		data = {
 			'date_gmt': iso_datestr(self.date_utc),
