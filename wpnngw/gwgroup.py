@@ -72,10 +72,12 @@ class GatewayedGroup(object):
 		self.queue.create()
 
 
-	def _process_pages(self, category, proc, after):
+	def _process_pages(self, category, proc, before=None, after=None):
 		site = self.status.get_site()
 		url = site + '/wp-json/wp/v2/' + category
 		params = {'page': 1, 'after': after, 'per_page': 100}
+		if before: params['before'] = before
+		if after: params['after'] = after
 		count = 0
 		more = True
 		try:
@@ -100,12 +102,15 @@ class GatewayedGroup(object):
 			print('%s: connection to %s failed' % (self.group,site))
 			return count
 
-	def wordpress_fetch(self):
-		after = self.status.last_update()
+	def wordpress_fetch(self, before=None, after=None):
+		if not after:
+			after = self.status.last_update()
 		site = self.status.get_site()
 
-		plen = self._process_pages('posts', Article.fromWordPressPost, after)
-		clen = self._process_pages('comments', Article.fromWordPressComment, after)
+		plen = self._process_pages('posts', Article.fromWordPressPost,
+			before=before, after=after)
+		clen = self._process_pages('comments', Article.fromWordPressComment,
+			before=before, after=after)
 
 		print('%s: %d new posts, %d new comments' % (self.group, plen, clen))
 		self.status.save()
