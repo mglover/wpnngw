@@ -6,6 +6,9 @@
 
 import os, sys, subprocess
 from datetime import datetime
+
+sys.path.append('/usr/local/news/spool/wpnngw')
+
 from wpnngw.util import inn_config, QueueDir
 
 QROOT=os.path.join(inn_config()['pathspool'],'wpnngw', 'modqueue')
@@ -22,11 +25,7 @@ if __name__ == '__main__':
 		with open(qfile, 'w') as qfd: qfd.write(sys.stdin.read())
 		qfd.close()
 
-	elif addresses[0] == 'usenet':
-		# innd initialization?
-		sys.stderr.write("gwmail initialized\n")
 	else:
-		raise ValueError("%s is not a moderator address" % addresses[0])
-		# silently fail to send mail -- oops! >:-)
-		sys.exit(0)
+		ret = subprocess.run(["/usr/sbin/sendmail", "-oi", "-oem", sys.argv[1])
+		sys.exit(ret.returncode)
 
