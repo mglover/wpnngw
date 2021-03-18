@@ -125,7 +125,7 @@ class GatewayedGroup(object):
 		self.queue.process(proc)
 		errors = self.queue.errors()
 		if errors:
-			fatal("%d articles in %s have errors" 
+			print("%d articles in %s have errors"
 				% (len(errors), self.queue.cur))
 
 
@@ -133,7 +133,7 @@ class GatewayedGroup(object):
 		site = self.status.get_site()
 		url = site + '/wp-json/wp/v2/comments'
 		resp = requests.post(url, json=post_data)
-		debug("Status: %d\n\nRequest: \n%s\n\nResponse:\n%s" 
+		debug("Status: %d\n\nRequest: \n%s\n\nResponse:\n%s"
 			% (resp.status_code, resp.request.body, resp.text))
 		return resp.status_code == 201
 
