@@ -8,10 +8,14 @@ from wpnngw.util import inn_config, fatal
 userfile = os.path.join(inn_config()['pathdb'], "users")
 
 def readusers(file):
+	line = ''
 	try:
 		fp = open(file, 'r')
-	except FileNotFoundError: return {}
-	return dict([line.split(':') for line in fp.readlines()])
+		return dict([line.split(':')
+					for line in fp.readlines()
+					if len(line)])
+	except FileNotFoundError:
+		return {}
 
 def writeusers(file, users):
 	fp = open(file, 'w')
@@ -43,7 +47,7 @@ def deluser(user):
 
 
 if __name__ == '__main__':
-	if len(sys.argv) < 3: fatal("user.py command username") 
+	if len(sys.argv) < 3: fatal("user.py [ add | del | passwd ] <username>")
 	cmd = sys.argv[1]
 	user = sys.argv[2]
 	if 'add' == cmd:
