@@ -5,7 +5,7 @@ export NNTPSERVER=localhost
 
 WPNNGW_BIN=/usr/local/news/spool/wpnngw/bin
 
-chpst -u news $WPNNGW_BIN/nn2wp.py
+chpst -u news $WPNNGW_BIN/nn2wp.py 2>&1
 sleep 10
-chpst -u news $WPNNGW_BIN/wp2nn.py
+chpst -u news $WPNNGW_BIN/wp2nn.py 2>&1
 sleep 120
