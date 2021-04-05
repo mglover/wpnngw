@@ -1,0 +1,9 @@
+#!/bin/sh
+
+export PYTHONPATH=/usr/local/news/spool/wpnngw
+export NNTPSERVER=localhost
+
+WPNNGW_BIN=/usr/local/news/spool/wpnngw/bin
+
+chpst -u news $WPNNGW_BIN/fill_gaps.py 2>&1
+sleep  3600

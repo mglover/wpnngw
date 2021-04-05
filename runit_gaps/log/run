@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec svlogd -ttt /usr/local/news/spool/wpnngw/log/gaps

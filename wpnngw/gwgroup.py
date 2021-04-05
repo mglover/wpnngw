@@ -50,6 +50,13 @@ class GroupStatus(object):
 		self.data['posts'][str(post_id)] = title
 
 
+	def get_gap_cid(self):
+		return int(self.data.get('gap_cid', 0))
+
+	def set_gap_cid(self,cid):
+		self.data['gap_cid'] = cid
+
+
 class GatewayedGroup(object):
 	root = os.path.join(inn_config()['pathspool'], 'wpnngw', 'groups')
 	def __init__(self, group):
@@ -102,15 +109,20 @@ class GatewayedGroup(object):
 			print('%s: connection to %s failed' % (self.group,site))
 			return count
 
-	def wordpress_fetch(self, before=None, after=None):
+	def wordpress_fetch(self, before=None, after=None, comments=True, posts=True):
 		if not after:
 			after = self.status.last_update()
 		site = self.status.get_site()
 
-		plen = self._process_pages('posts', Article.fromWordPressPost,
-			before=before, after=after)
-		clen = self._process_pages('comments', Article.fromWordPressComment,
-			before=before, after=after)
+		if posts:
+			plen = self._process_pages('posts', Article.fromWordPressPost,
+				before=before, after=after)
+		else: plen = 0
+
+		if comments:
+			clen = self._process_pages('comments', Article.fromWordPressComment,
+				before=before, after=after)
+		else: comments = 0
 
 		print('%s: %d new posts, %d new comments' % (self.group, plen, clen))
 		self.status.save()
