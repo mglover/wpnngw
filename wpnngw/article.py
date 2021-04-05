@@ -270,7 +270,7 @@ class Article(object):
 		content = self.text_from_html(self.content)
 		msg.set_content(content, cte='quoted-printable')
 
-		return msg.as_string()
+		return foldfix(msg.as_string())
 
 
 	def enqueue(self, queue):
