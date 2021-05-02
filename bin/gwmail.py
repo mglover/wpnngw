@@ -27,6 +27,6 @@ if __name__ == '__main__':
 		qfd.close()
 
 	else:
-		ret = subprocess.run(["/usr/sbin/sendmail", "-oi", "-oem", address])
+		ret = subprocess.run(["/usr/lib/sendmail", "-oi", "-oem", address])
 		sys.exit(ret.returncode)
 
