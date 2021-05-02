@@ -22,7 +22,8 @@ if __name__ == '__main__':
 		group = address.rstrip('@wpnngw.local')
 		now = datetime.timestamp(datetime.now())
 		qfile = qdir.newfile("%s-%s" % (group, now))
-		with open(qfile, 'w') as qfd: qfd.write(sys.stdin.read())
+		qfd = open(qfile, 'w')
+		qfd.write(sys.stdin.read())
 		qfd.close()
 
 	else:
